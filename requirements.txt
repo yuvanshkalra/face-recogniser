@@ -3,3 +3,4 @@ face-recognition
 opencv-python
 numpy
 Pillow
+firebase-admin

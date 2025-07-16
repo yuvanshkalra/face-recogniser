@@ -1,78 +1,78 @@
 import streamlit as st
 import face_recognition
-import os
 import cv2
 import numpy as np
-from PIL import Image
-import shutil # For deleting directories
+import json # For parsing Firebase credentials
+import firebase_admin
+from firebase_admin import credentials, firestore, initialize_app
 
-# --- Configuration ---
-KNOWN_FACES_DIR = 'known_faces' # Using a relative path for easier deployment
+# --- Admin Credentials (loaded from Streamlit secrets) ---
+ADMIN_USERNAME = st.secrets["admin_credentials"]["username"]
+ADMIN_PASSWORD = st.secrets["admin_credentials"]["password"]
 
-# Ensure the known_faces directory exists
-if not os.path.exists(KNOWN_FACES_DIR):
-    os.makedirs(KNOWN_FACES_DIR)
+# --- Firebase Initialization ---
+# Check if Firebase app is already initialized to prevent re-initialization errors
+if not firebase_admin._apps:
+    try:
+        # Load Firebase credentials from Streamlit secrets
+        firebase_credentials_json = json.loads(st.secrets["firebase_credentials"])
+        cred = credentials.Certificate(firebase_credentials_json)
+        initialize_app(cred)
+        db = firestore.client() # Initialize Firestore client
+        st.success("Firebase initialized successfully!")
+    except Exception as e:
+        st.error(f"Error initializing Firebase: {e}. Make sure your Firebase credentials are correctly set in Streamlit secrets.")
+        st.stop() # Stop the app if Firebase cannot be initialized
+else:
+    db = firestore.client() # Get existing Firestore client
+    st.info("Firebase already initialized.")
 
-# --- Admin Credentials (for demonstration purposes) ---
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "adminpassword"
 
-# --- Global Data Storage for Known Faces (now re-populated on every run) ---
-# These will be loaded every time the script reruns, as persistence is removed.
-# They are still stored in session_state to be accessible across functions within a single rerun.
+# --- Global Data Storage for Known Faces ---
+# These will be loaded from Firestore and stored in Streamlit's session state
 if 'known_face_encodings' not in st.session_state:
     st.session_state.known_face_encodings = []
 if 'known_face_names' not in st.session_state:
     st.session_state.known_face_names = []
 
-# --- Function to Load Known Faces and Generate Encodings (ALWAYS re-encodes) ---
+# --- Function to Load Known Faces and Generate Encodings (from Firestore ONLY) ---
 def load_known_faces_and_encodings():
     """
-    Scans the KNOWN_FACES_DIR, encodes all faces, and populates
-    st.session_state.known_face_encodings and st.session_state.known_face_names.
-    This function now *always* re-encodes as persistence is removed.
+    Loads known face encodings and names ONLY from Firestore.
     """
-    st.write("--- Re-encoding Known Faces (No Persistence) ---")
-    st.warning("Faces are re-encoded on every application rerun. This can be slow.")
-
-    if not os.path.exists(KNOWN_FACES_DIR):
-        st.error(f"Error: '{KNOWN_FACES_DIR}' directory not found. Please create it and add your known face images.")
-        st.session_state.known_face_encodings = []
-        st.session_state.known_face_names = []
-        return
-
+    st.write("--- Loading Known Faces from Firestore ---")
+    
     temp_encodings = []
     temp_names = []
-    
-    # Use a Streamlit spinner for the encoding process
-    with st.spinner("Scanning and encoding known faces... This happens on every rerun."):
-        for name in os.listdir(KNOWN_FACES_DIR):
-            person_dir = os.path.join(KNOWN_FACES_DIR, name)
-            if os.path.isdir(person_dir):
-                # st.write(f"Processing images for: **{name}**") # Too verbose for Streamlit
-                for filename in os.listdir(person_dir):
-                    if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-                        image_path = os.path.join(person_dir, filename)
-                        try:
-                            image = face_recognition.load_image_file(image_path)
-                            face_locations = face_recognition.face_locations(image)
-                            face_encodings = face_recognition.face_encodings(image, face_locations)
 
-                            if face_encodings:
-                                temp_encodings.append(face_encodings[0])
-                                temp_names.append(name)
-                            else:
-                                st.warning(f"   - No face found in {filename} for {name}. Skipping.")
-                        except Exception as e:
-                            st.error(f"   - Error processing {filename} for {name}: {e}")
+    try:
+        # Get all documents from the 'known_faces_data' collection
+        docs = db.collection('known_faces_data').stream()
 
-    st.session_state.known_face_encodings = temp_encodings
-    st.session_state.known_face_names = temp_names
+        for doc in docs:
+            data = doc.to_dict()
+            name = data.get('name')
+            # Encodings are stored as lists in Firestore, convert back to numpy arrays
+            encodings_list = data.get('encodings', [])
+            
+            if name and encodings_list:
+                for enc_list in encodings_list:
+                    temp_encodings.append(np.array(enc_list))
+                    temp_names.append(name)
+            else:
+                st.warning(f"Skipping malformed document in Firestore: {doc.id}")
 
-    st.info(f"Finished encoding process. Total known faces: {len(st.session_state.known_face_encodings)}")
+        st.session_state.known_face_encodings = temp_encodings
+        st.session_state.known_face_names = temp_names
+        st.success(f"Loaded {len(st.session_state.known_face_encodings)} known faces from Firestore.")
+
+    except Exception as e:
+        st.error(f"Error loading known faces from Firestore: {e}. Please check your Firebase setup and security rules.")
+        st.session_state.known_face_encodings = []
+        st.session_state.known_face_names = []
 
     if not st.session_state.known_face_encodings:
-        st.warning("\nWarning: No known faces loaded or encoded. Face recognition will only identify 'Unknown'.")
+        st.info("No known faces in the Firestore database.")
 
 # --- Function to Detect Faces in an Image ---
 def detect_faces_in_image(image_bytes):
@@ -157,9 +157,9 @@ def admin_dashboard():
     st.write(f"Welcome, {st.session_state.user_type}!")
 
     st.markdown("---")
-    st.subheader("Manage Known Faces Database")
+    st.subheader("Manage Known Faces Database (Firestore as Source of Truth)")
 
-    # Display current known faces
+    # Display current known faces from session state (which is loaded from Firestore)
     st.write("### Current Known Faces:")
     if st.session_state.known_face_names:
         names_count = {}
@@ -172,48 +172,79 @@ def admin_dashboard():
 
     st.markdown("---")
     st.subheader("Add New Faces to Database")
-    new_person_name = st.text_input("Enter name for new person/folder:", key="new_person_name_input")
+    st.info("Uploaded images are processed directly to extract encodings, which are then stored in Firestore. Images are NOT saved locally.")
+    new_person_name = st.text_input("Enter name for new person:", key="new_person_name_input")
     uploaded_files = st.file_uploader("Upload images for this person", type=["jpg", "jpeg", "png"], accept_multiple_files=True, key="admin_file_uploader")
 
     if new_person_name and uploaded_files:
         if st.button(f"Add {len(uploaded_files)} image(s) for {new_person_name}", key="add_images_btn"):
-            person_path = os.path.join(KNOWN_FACES_DIR, new_person_name)
-            if not os.path.exists(person_path):
-                os.makedirs(person_path)
-                st.info(f"Created directory: {person_path}")
+            new_encodings_for_person = []
+            with st.spinner("Processing images and generating encodings..."):
+                for uploaded_file in uploaded_files:
+                    try:
+                        # Load image directly from bytes
+                        image_bytes = uploaded_file.read()
+                        nparr = np.frombuffer(image_bytes, np.uint8)
+                        image_rgb = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                        image_rgb = cv2.cvtColor(image_rgb, cv2.COLOR_BGR2RGB) # Ensure RGB for face_recognition
 
-            for uploaded_file in uploaded_files:
-                file_path = os.path.join(person_path, uploaded_file.name)
-                with open(file_path, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
-                st.success(f"Saved: {uploaded_file.name} for {new_person_name}")
+                        face_locations = face_recognition.face_locations(image_rgb)
+                        face_encodings = face_recognition.face_encodings(image_rgb, face_locations)
 
-            # After adding, force re-encoding
+                        if face_encodings:
+                            # Convert numpy array to list for Firestore storage
+                            new_encodings_for_person.append(face_encodings[0].tolist())
+                            st.info(f"Encoded face from {uploaded_file.name}.")
+                        else:
+                            st.warning(f"No face found in {uploaded_file.name}. Skipping encoding for this image.")
+                    except Exception as e:
+                        st.error(f"Error processing {uploaded_file.name} for encoding: {e}")
+
+            if new_encodings_for_person:
+                # Add/update document in Firestore
+                doc_ref = db.collection('known_faces_data').document(new_person_name)
+                
+                # Fetch existing encodings if the person already exists
+                existing_data = doc_ref.get()
+                if existing_data.exists:
+                    existing_encodings = existing_data.to_dict().get('encodings', [])
+                    # Append new encodings to existing ones
+                    all_encodings = existing_encodings + new_encodings_for_person
+                    doc_ref.update({'encodings': all_encodings})
+                    st.success(f"Updated encodings for {new_person_name} in Firestore.")
+                else:
+                    doc_ref.set({
+                        'name': new_person_name,
+                        'encodings': new_encodings_for_person
+                    })
+                    st.success(f"Added {new_person_name} and encodings to Firestore.")
+            else:
+                st.warning(f"No valid faces were encoded for {new_person_name} to add to Firestore.")
+
+            # Reload known faces from Firestore to update the app's state
             load_known_faces_and_encodings()
             st.rerun() # Rerun to update the displayed list of known faces
 
     st.markdown("---")
     st.subheader("Delete Faces from Database")
-    person_to_delete = st.text_input("Enter name of person/folder to delete:", key="delete_person_name_input")
+    st.info("This will delete the person's data from Firestore. No local files are managed.")
+    person_to_delete = st.text_input("Enter name of person to delete:", key="delete_person_name_input")
     if person_to_delete:
-        delete_path = os.path.join(KNOWN_FACES_DIR, person_to_delete)
-        if os.path.exists(delete_path) and os.path.isdir(delete_path):
-            if st.button(f"Delete all images for {person_to_delete}", key="delete_person_btn", help="This will permanently delete the folder and its contents."):
-                try:
-                    shutil.rmtree(delete_path)
-                    st.success(f"Successfully deleted folder for {person_to_delete}.")
-                    # Force re-encoding after deletion
-                    load_known_faces_and_encodings()
-                    st.rerun() # Rerun to update the displayed list of known faces
-                except Exception as e:
-                    st.error(f"Error deleting {person_to_delete}: {e}")
-        else:
-            st.warning(f"Folder for '{person_to_delete}' not found.")
+        if st.button(f"Delete {person_to_delete}", key="delete_person_btn", help="This will permanently delete the person's data."):
+            # Delete from Firestore
+            doc_ref = db.collection('known_faces_data').document(person_to_delete)
+            if doc_ref.get().exists:
+                doc_ref.delete()
+                st.success(f"Successfully deleted {person_to_delete} from Firestore.")
+            else:
+                st.warning(f"Person '{person_to_delete}' not found in Firestore.")
 
-    # Removed "Rebuild Cache" button as it's no longer necessary with no persistence
+            # Reload known faces from Firestore to update the app's state
+            load_known_faces_and_encodings()
+            st.rerun() # Rerun to update the displayed list of known faces
+
     st.markdown("---")
-    st.info("Note: With persistence removed, faces are re-encoded automatically on relevant actions (e.g., adding/deleting faces) and on every app rerun.")
-
+    st.info("All face data (encodings) is now stored and managed directly in Firestore. Changes are persistent across app restarts.")
 
     if st.button("Logout", key="admin_logout_btn"):
         st.session_state.logged_in = False
@@ -257,8 +288,10 @@ def user_dashboard():
 
 # --- Main Application Layout ---
 def main():
-    # Load encodings every time the app runs, as there's no persistence
-    load_known_faces_and_encodings()
+    # Load encodings from Firestore when the app starts or on relevant actions
+    # This ensures the app's state reflects the database content
+    if not st.session_state.known_face_encodings: # Only load if not already loaded in this session
+        load_known_faces_and_encodings()
 
     st.set_page_config(layout="centered", page_title="SSO Face Recognizer")
 

@@ -1,6 +1,5 @@
 streamlit
 face-recognition
-opencv-python
+opencv-python-headless 
 numpy
-Pillow
-firebase-admin
+dlib

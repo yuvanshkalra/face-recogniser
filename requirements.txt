@@ -1,1 +1,5 @@
-
+streamlit
+face-recognition
+opencv-python
+numpy
+Pillow

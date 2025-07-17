@@ -3,20 +3,22 @@ import face_recognition
 import os
 import numpy as np
 import cv2
+from PIL import Image # Import Pillow for image manipulation
 
 # --- Configuration (relative path for deployment) ---
 KNOWN_FACES_DIR = 'known_faces'
 
 # --- Data Storage (use st.cache_resource for efficiency) ---
+# Add a parameter to force reload the cache
 @st.cache_resource
-def load_known_faces(known_faces_dir):
+def load_known_faces(known_faces_dir, _=None): # Added _=None to allow manual cache invalidation
     st.info("Loading known faces... This might take a moment.")
     known_face_encodings = []
     known_face_names = []
 
     if not os.path.exists(known_faces_dir):
-        st.error(f"Error: '{known_faces_dir}' directory not found on the server. "
-                 "Please ensure it's included in your GitHub repository correctly.")
+        os.makedirs(known_faces_dir) # Create the directory if it doesn't exist
+        st.warning(f"'{known_faces_dir}' directory created. Please add face images.")
         return [], []
 
     for name in os.listdir(known_faces_dir):
@@ -33,7 +35,10 @@ def load_known_faces(known_faces_dir):
                         if face_encodings:
                             known_face_encodings.append(face_encodings[0])
                             known_face_names.append(name)
+                        # else:
+                        #     st.warning(f"No face found in {filename} for {name}. Skipping.")
                     except Exception as e:
+                        st.error(f"Error processing {filename} for {name}: {e}")
                         pass
     st.success(f"Finished loading known faces. Total known faces: {len(known_face_encodings)}")
     return known_face_encodings, known_face_names
@@ -114,28 +119,19 @@ if 'page' not in st.session_state:
 
 # --- Home Page ---
 if st.session_state.page == 'home':
-    # Use columns to control the image width and center it
-    col_left, col_center, col_right = st.columns([1, 2, 1]) # Adjust ratios as needed
+    col_left, col_center, col_right = st.columns([1, 2, 1])
 
     with col_center:
-        # Load the local image file
         try:
-            # You might need to adjust the width based on your actual logo's dimensions
-            # and how much space you want it to take in the central column.
-            # Experiment with this 'width' value. 250-350 pixels is a good starting point.
-            st.image("sso_logo.jpg", width=300) # Use your provided image name here
+            st.image("image_f2baca.png", width=300) # Use your provided image name here
         except FileNotFoundError:
-            st.warning("Logo image 'sso_logo.jpg' not found. Please ensure it's in the same directory.")
-            # Fallback for when image is not found
+            st.warning("Logo image 'image_f2baca.png' not found. Please ensure it's in the same directory.")
             st.markdown("## SSO Consultants")
-
 
     st.markdown("<h2 style='text-align: center;'>SSO Consultants Face Recogniser 🕵️‍♂️</h2>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center;'>Please choose your login type.</h3>", unsafe_allow_html=True)
 
-
-    # Centering buttons using columns
-    col1_btn, col2_btn, col3_btn, col4_btn = st.columns([1, 0.7, 0.7, 1]) # Adjust ratios for button spacing
+    col1_btn, col2_btn, col3_btn, col4_btn = st.columns([1, 0.7, 0.7, 1])
 
     with col2_btn:
         if st.button("Login as User", key="user_login_btn", help="Proceed to face recognition for users"):
@@ -210,17 +206,75 @@ elif st.session_state.page == 'user_login':
 elif st.session_state.page == 'admin_login':
     st.title("Admin Panel 🔒")
     st.markdown("This section is for **administrators** only.")
-    st.warning("Admin functionalities will be implemented here.")
 
-    password = st.text_input("Enter Admin Password:", type="password")
-    if password == "admin123": # Replace with a more secure method for production
+    admin_password = st.text_input("Enter Admin Password:", type="password", key="admin_pass_input")
+
+    if admin_password == "admin123": # **IMPORTANT: Replace with a more secure authentication method for production!**
         st.success("Welcome, Admin!")
-        st.write("You can add options here like:")
-        st.markdown("- **Manage Known Faces:** Upload new faces for training.")
-        st.markdown("- **View Attendance Logs:** See who has been recognized.")
-        st.markdown("- **Configuration Settings:** Adjust recognition thresholds, etc.")
+
+        st.subheader("Add New Faces to Database ➕")
+        st.markdown("Upload an image of a person and provide a name for recognition.")
+
+        new_face_name = st.text_input("Enter Name/Description for the Face:", key="new_face_name_input")
+        new_face_image = st.file_uploader("Upload Image of New Face:", type=["jpg", "jpeg", "png"], key="new_face_image_uploader")
+
+        if st.button("Add Face to Database", key="add_face_btn"):
+            if new_face_name and new_face_image:
+                person_dir = os.path.join(KNOWN_FACES_DIR, new_face_name.replace(" ", "_").lower()) # Create a clean directory name
+                os.makedirs(person_dir, exist_ok=True) # Create directory if it doesn't exist
+
+                # Save the image
+                image_path = os.path.join(person_dir, f"{new_face_name.replace(' ', '_').lower()}_{len(os.listdir(person_dir)) + 1}.jpg")
+                
+                # Use PIL to save the image to ensure consistent format if needed
+                img = Image.open(new_face_image).convert("RGB")
+                img.save(image_path, "JPEG") # Save as JPEG
+
+                st.info(f"Analyzing {new_face_name}'s image...")
+                
+                try:
+                    # Verify face can be encoded
+                    image_to_encode = face_recognition.load_image_file(image_path)
+                    face_locations = face_recognition.face_locations(image_to_encode)
+                    
+                    if face_locations:
+                        # Clear the cache and reload known faces to include the new one
+                        load_known_faces.clear()
+                        global known_face_encodings, known_face_names
+                        known_face_encodings, known_face_names = load_known_faces(KNOWN_FACES_DIR, _=np.random.rand()) # Pass dummy arg to force reload
+                        st.success(f"Successfully added '{new_face_name}' to the known faces database! ✅")
+                        st.rerun() # Rerun to clear inputs and reflect changes
+                    else:
+                        st.error(f"No face found in the uploaded image for '{new_face_name}'. Please upload an image with a clear face.")
+                        # Clean up the empty directory or file if no face was found
+                        if os.path.exists(image_path):
+                            os.remove(image_path)
+                        if not os.listdir(person_dir):
+                            os.rmdir(person_dir)
+
+                except Exception as e:
+                    st.error(f"Error processing image for '{new_face_name}': {e}")
+                    # Clean up if an error occurred during processing
+                    if os.path.exists(image_path):
+                        os.remove(image_path)
+                    if not os.listdir(person_dir):
+                        os.rmdir(person_dir)
+
+            else:
+                st.warning("Please provide both a name and upload an image.")
+
+        st.subheader("Current Known Faces 📋")
+        if known_face_names:
+            # Display current known faces with names
+            for i, name in enumerate(sorted(set(known_face_names))): # Use set to display unique names
+                st.write(f"- **{name}**")
+        else:
+            st.info("No faces currently registered in the database.")
+
+
     else:
-        st.error("Incorrect password.")
+        if admin_password: # Only show error if user actually typed something
+            st.error("Incorrect password.")
 
     if st.button("⬅ Back to Home", key="admin_back_btn"):
         st.session_state.page = 'home'

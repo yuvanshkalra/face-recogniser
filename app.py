@@ -238,14 +238,13 @@ elif st.session_state.page == 'admin_login':
                     face_locations = face_recognition.face_locations(image_to_encode)
                     
                     if face_locations:
-                        # Clear the cache and reload known faces to include the new one
                         load_known_faces.clear()
-                        # Place global declaration *before* re-assignment
-                        global known_face_encodings, known_face_names 
-                        known_face_encodings, known_face_names = load_known_faces(KNOWN_FACES_DIR, _=np.random.rand()) # Pass dummy arg to force reload
+                        # This is the crucial line:
+                        global known_face_encodings, known_face_names
+                        known_face_encodings, known_face_names = load_known_faces(KNOWN_FACES_DIR, _=np.random.rand())
                         
                         st.success(f"Successfully added '{new_face_name}' to the known faces database! ✅")
-                        st.rerun() # Rerun to clear inputs and reflect changes
+                        st.rerun()
                     else:
                         st.error(f"No face found in the uploaded image for '{new_face_name}'. Please upload an image with a clear face.")
                         # Clean up the empty directory or file if no face was found

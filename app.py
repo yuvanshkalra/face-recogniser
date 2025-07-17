@@ -114,18 +114,35 @@ if 'page' not in st.session_state:
 
 # --- Home Page ---
 if st.session_state.page == 'home':
-    st.image("sso_logo.jpg", use_column_width=True) # Replace with your logo if you have one
-    st.title("SSO Consultants Face recogniser 🕵️‍♂️")
-    st.markdown("### Please choose your login type.")
+    # Use columns to control the image width and center it
+    col_left, col_center, col_right = st.columns([1, 2, 1]) # Adjust ratios as needed
 
-    col1, col2 = st.columns(2)
+    with col_center:
+        # Load the local image file
+        try:
+            # You might need to adjust the width based on your actual logo's dimensions
+            # and how much space you want it to take in the central column.
+            # Experiment with this 'width' value. 250-350 pixels is a good starting point.
+            st.image("sso_logo.jpg", width=300) # Use your provided image name here
+        except FileNotFoundError:
+            st.warning("Logo image 'sso_logo.jpg' not found. Please ensure it's in the same directory.")
+            # Fallback for when image is not found
+            st.markdown("## SSO Consultants")
 
-    with col1:
+
+    st.markdown("<h2 style='text-align: center;'>SSO Consultants Face Recogniser 🕵️‍♂️</h2>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center;'>Please choose your login type.</h3>", unsafe_allow_html=True)
+
+
+    # Centering buttons using columns
+    col1_btn, col2_btn, col3_btn, col4_btn = st.columns([1, 0.7, 0.7, 1]) # Adjust ratios for button spacing
+
+    with col2_btn:
         if st.button("Login as User", key="user_login_btn", help="Proceed to face recognition for users"):
             st.session_state.page = 'user_login'
             st.rerun()
 
-    with col2:
+    with col3_btn:
         if st.button("Login as Admin", key="admin_login_btn", help="Proceed to admin functionalities"):
             st.session_state.page = 'admin_login'
             st.rerun()
@@ -195,7 +212,6 @@ elif st.session_state.page == 'admin_login':
     st.markdown("This section is for **administrators** only.")
     st.warning("Admin functionalities will be implemented here.")
 
-    # You can add a simple password input for basic admin access
     password = st.text_input("Enter Admin Password:", type="password")
     if password == "admin123": # Replace with a more secure method for production
         st.success("Welcome, Admin!")

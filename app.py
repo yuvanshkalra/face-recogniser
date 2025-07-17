@@ -240,7 +240,7 @@ elif st.session_state.page == 'admin_login':
                     if face_locations:
                         load_known_faces.clear()
                         # This is the crucial line:
-                        global known_face_encodings, global known_face_names
+                        global known_face_encodings,known_face_names
                         known_face_encodings, known_face_names = load_known_faces(KNOWN_FACES_DIR, _=np.random.rand())
                         
                         st.success(f"Successfully added '{new_face_name}' to the known faces database! ✅")

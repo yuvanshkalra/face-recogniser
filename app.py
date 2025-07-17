@@ -13,14 +13,20 @@ KNOWN_FACES_DIR = 'known_faces'
 @st.cache_resource
 def load_known_faces(known_faces_dir, _=None): # Added _=None to allow manual cache invalidation
     st.info("Loading known faces... This might take a moment.")
+    
+    # Declare global variables here to modify the module-level lists
+    global known_face_encodings, known_face_names
+    
+    # Initialize lists (important if cache is cleared or on first run)
     known_face_encodings = []
     known_face_names = []
 
     if not os.path.exists(known_faces_dir):
         os.makedirs(known_faces_dir) # Create the directory if it doesn't exist
         st.warning(f"'{known_faces_dir}' directory created. Please add face images.")
-        return [], []
+        return [], [] # Return empty lists if directory was just created
 
+    # Iterate through subdirectories for each person
     for name in os.listdir(known_faces_dir):
         person_dir = os.path.join(known_faces_dir, name)
         if os.path.isdir(person_dir):
@@ -39,12 +45,18 @@ def load_known_faces(known_faces_dir, _=None): # Added _=None to allow manual ca
                         #     st.warning(f"No face found in {filename} for {name}. Skipping.")
                     except Exception as e:
                         st.error(f"Error processing {filename} for {name}: {e}")
-                        pass
+                        pass # Continue to next file even if one fails
     st.success(f"Finished loading known faces. Total known faces: {len(known_face_encodings)}")
     return known_face_encodings, known_face_names
 
+# Initialize global variables at module level
+known_face_encodings = []
+known_face_names = []
+
 # Load faces once when the app starts or is re-run due to cache invalidation
+# The initial call to load_known_faces will populate the global lists.
 known_face_encodings, known_face_names = load_known_faces(KNOWN_FACES_DIR)
+
 
 # --- Function to process an image and draw boxes (reusable) ---
 def process_frame_for_faces(frame_rgb, known_encodings, known_names):
@@ -56,18 +68,23 @@ def process_frame_for_faces(frame_rgb, known_encodings, known_names):
     frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
 
     if not face_locations:
-        return frame_bgr
+        return frame_bgr # Return original frame if no faces found
 
     for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
         name = "Unknown"
 
-        if known_encodings:
+        if known_encodings: # Only compare if there are known faces
             matches = face_recognition.compare_faces(known_encodings, face_encoding)
             face_distances = face_recognition.face_distance(known_encodings, face_encoding)
             best_match_index = np.argmin(face_distances)
             if matches[best_match_index]:
                 name = known_names[best_match_index]
+            else:
+                # Optional: If no exact match, consider the closest match if within a threshold
+                if face_distances[best_match_index] < 0.6: # Adjust threshold as needed
+                    name = known_names[best_match_index]
 
+        # Drawing rectangles and labels
         box_padding = 15
         base_label_height = 25
         text_y_offset = 10
@@ -89,17 +106,18 @@ def process_frame_for_faces(frame_rgb, known_encodings, known_names):
         label_top = bottom_ext
         label_bottom = label_top + label_height
         label_left = left_ext
-        label_right = max(right_ext, left_ext + label_width)
+        label_right = max(right_ext, left_ext + label_width) # Ensure label is at least as wide as box
 
+        # Adjust label position if it goes out of bounds
         if label_bottom > frame_bgr.shape[0]:
             label_bottom = frame_bgr.shape[0]
             label_top = label_bottom - label_height
-            if label_top < 0:
+            if label_top < 0: # If still goes above, set to 0
                 label_top = 0
 
         if label_right > frame_bgr.shape[1]:
             label_right = frame_bgr.shape[1]
-            label_left = max(0, label_right - label_width)
+            label_left = max(0, label_right - label_width) # Ensure label is not out of bounds left
 
         cv2.rectangle(frame_bgr, (label_left, label_top), (label_right, label_bottom), (0, 255, 0), cv2.FILLED)
 
@@ -123,7 +141,8 @@ if st.session_state.page == 'home':
 
     with col_center:
         try:
-            st.image("image_f2baca.png", width=300) # Use your provided image name here
+            # Ensure 'image_f2baca.png' is in the same directory as your app.py
+            st.image("image_f2baca.png", width=300) 
         except FileNotFoundError:
             st.warning("Logo image 'image_f2baca.png' not found. Please ensure it's in the same directory.")
             st.markdown("## SSO Consultants")
@@ -224,9 +243,11 @@ elif st.session_state.page == 'admin_login':
                 os.makedirs(person_dir, exist_ok=True) # Create directory if it doesn't exist
 
                 # Save the image
-                image_path = os.path.join(person_dir, f"{new_face_name.replace(' ', '_').lower()}_{len(os.listdir(person_dir)) + 1}.jpg")
+                # Generate a unique filename to avoid overwriting
+                image_filename = f"{new_face_name.replace(' ', '_').lower()}_{len(os.listdir(person_dir)) + 1}.jpg"
+                image_path = os.path.join(person_dir, image_filename)
                 
-                # Use PIL to save the image to ensure consistent format if needed
+                # Use PIL to save the image to ensure consistent format
                 img = Image.open(new_face_image).convert("RGB")
                 img.save(image_path, "JPEG") # Save as JPEG
 
@@ -238,19 +259,22 @@ elif st.session_state.page == 'admin_login':
                     face_locations = face_recognition.face_locations(image_to_encode)
                     
                     if face_locations:
+                        # Clear the cache for load_known_faces to force a reload
                         load_known_faces.clear()
-                        # This is the crucial line:
-                        global known_face_encodings,known_face_names
+                        
+                        # Re-load known faces; this will update the global lists
+                        # The 'global' keyword is NOT needed here because known_face_encodings
+                        # and known_face_names are already global variables at the module level.
                         known_face_encodings, known_face_names = load_known_faces(KNOWN_FACES_DIR, _=np.random.rand())
                         
                         st.success(f"Successfully added '{new_face_name}' to the known faces database! ✅")
-                        st.rerun()
+                        st.rerun() # Rerun to refresh the UI and known faces list
                     else:
                         st.error(f"No face found in the uploaded image for '{new_face_name}'. Please upload an image with a clear face.")
                         # Clean up the empty directory or file if no face was found
                         if os.path.exists(image_path):
                             os.remove(image_path)
-                        if not os.listdir(person_dir):
+                        if not os.listdir(person_dir): # Remove directory if it's empty after failed add
                             os.rmdir(person_dir)
 
                 except Exception as e:
@@ -258,7 +282,7 @@ elif st.session_state.page == 'admin_login':
                     # Clean up if an error occurred during processing
                     if os.path.exists(image_path):
                         os.remove(image_path)
-                    if not os.listdir(person_dir):
+                    if not os.listdir(person_dir): # Remove directory if it's empty after failed add
                         os.rmdir(person_dir)
 
             else:
@@ -267,7 +291,8 @@ elif st.session_state.page == 'admin_login':
         st.subheader("Current Known Faces 📋")
         if known_face_names:
             # Display current known faces with names
-            for i, name in enumerate(sorted(set(known_face_names))): # Use set to display unique names
+            # Using sorted(set(...)) to display unique names alphabetically
+            for name in sorted(set(known_face_names)): 
                 st.write(f"- **{name}**")
         else:
             st.info("No faces currently registered in the database.")

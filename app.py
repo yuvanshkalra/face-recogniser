@@ -142,9 +142,9 @@ if st.session_state.page == 'home':
     with col_center:
         try:
             # Ensure 'image_f2baca.png' is in the same directory as your app.py
-            st.image("image_f2baca.png", width=300) 
+            st.image("sso_logo.jpg", width=300) 
         except FileNotFoundError:
-            st.warning("Logo image 'image_f2baca.png' not found. Please ensure it's in the same directory.")
+            st.warning("Logo image 'sso_logo.jpg' not found. Please ensure it's in the same directory.")
             st.markdown("## SSO Consultants")
 
     st.markdown("<h2 style='text-align: center;'>SSO Consultants Face Recogniser 🕵️‍♂️</h2>", unsafe_allow_html=True)

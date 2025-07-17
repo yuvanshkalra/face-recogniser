@@ -114,7 +114,7 @@ if 'page' not in st.session_state:
 
 # --- Home Page ---
 if st.session_state.page == 'home':
-    st.image("image_f31999.png", use_column_width=True) # Replace with your logo if you have one
+    st.image("sso_logo.jpg", use_column_width=True) # Replace with your logo if you have one
     st.title("SSO Consultants Face recogniser 🕵️‍♂️")
     st.markdown("### Please choose your login type.")
 

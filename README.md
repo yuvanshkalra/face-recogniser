@@ -77,22 +77,24 @@ Whether an administrator is managing registered profiles or a user is identifyin
 </tr>
 </table>
 
+
 ## 🧠 How It Works
+
+The application follows a simple three-step process:
 
 ```mermaid
 flowchart TD
-    A["📸 Upload Image / Capture Photo"] --> B["Face Detection"]
-    B --> C["Generate Facial Encoding"]
-    C --> D["Compare with Registered Encodings"]
-    E["Firebase Firestore"] --> D
-    D --> F{"Identity Match?"}
-    F -->|Match| G["Retrieve Profile"]
-    F -->|No Match| H["Unknown / Possible Match"]
-    G --> I["Display Name & Sports Statistics"]
-    H --> J["Display Recognition Result"]
-    I --> K["Interactive Streamlit UI"]
-    J --> K
+    A["📸 Upload a Photo or Capture an Image"] --> B["🔍 AI Finds and Matches Faces"]
+    B --> C["☁️ Retrieves Data from Firebase"]
+    C --> D["👤 Displays the Person's Profile"]
 ```
+
+1. **Capture an Image:** Upload a photo or take a picture using the camera.
+2. **Recognise the Face:** The AI compares the face with registered faces stored in the system.
+3. **Display the Profile:** If a match is found, the application displays the person's name and available sports statistics.
+
+**In short:** Upload a photo → Recognise the face → View the profile.
+
 
 ### The Recognition Pipeline
 

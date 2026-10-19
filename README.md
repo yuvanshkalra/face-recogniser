@@ -1,126 +1,193 @@
 
-# Face Recogniser — AI-Powered Face Recognition System
+<div align="center">
 
-A web-based face recognition application built with **Python, Streamlit, OpenCV, the `face_recognition` library, and Firebase**. The application identifies registered people from uploaded images or camera captures and displays their associated profile information, including sports statistics.
+# 👁️ Face Recogniser
+### AI-Powered Face Recognition & Sports Profile Intelligence
 
-Developed for **SSO Consultants**.
+**Recognise faces. Discover profiles. Connect identities with data.**
 
-## ✨ Features
+A Python-based face recognition web application that identifies registered individuals from images or camera captures and displays their associated sports profiles using an interactive Streamlit interface and Firebase backend.
 
-### 🔍 Face Recognition
-- Recognise registered people from uploaded images.
-- Capture an image using the camera directly from the application.
-- Detect multiple faces in a single image.
-- Draw bounding boxes and identification labels around detected faces.
-- Display `Unknown` or a possible match when a confident identification cannot be established.
+<br>
 
-### 👤 User Dashboard
-- Separate user login.
-- Choose between camera capture and image upload.
-- View identified individuals and their available profile details.
-- Display additional statistics based on the person's sport.
-- Log out securely through the application interface.
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
+![Machine Learning](https://img.shields.io/badge/AI-Face_Recognition-8A2BE2?style=for-the-badge)
 
-### 🛠️ Admin Dashboard
-- Separate administrator login.
-- Register new people using an image upload.
-- Generate face encodings for recognition.
-- View registered profiles in a tabular interface.
-- Update personal information and sport-specific statistics.
-- Replace a registered person's image and corresponding face encoding.
-- Delete profiles with a confirmation step.
-- Filter registered profiles by sport.
+[🚀 View Repository](https://github.com/yuvanshkalra/face-recogniser) · [🐛 Report an Issue](https://github.com/yuvanshkalra/face-recogniser/issues)
 
-### 🏆 Sports Profile Management
-The application supports the following sports categories:
-
-| Sport | Available profile details |
-|---|---|
-| Cricket | Total runs and total wickets |
-| NBA | Points per game and playing position |
-| Football | Goals scored and goals saved |
-| Other | General profile information |
-
-Common profile fields include name, age, and height. Fields are displayed when the corresponding data is available.
-
-### ☁️ Firebase Integration
-- **Cloud Firestore:** Stores face encodings and profile metadata.
-- **Firebase Cloud Storage:** Stores the registered profile images.
-- **Cached data loading:** Uses Streamlit resource caching to reduce repeated database reads.
-- **Dynamic updates:** Refreshes the cached face database after administrative changes.
+</div>
 
 ---
 
-## 🧰 Tech Stack
+## ✨ About the Project
 
-| Technology | Purpose |
-|---|---|
-| Python | Core application logic |
-| Streamlit | Interactive web interface |
-| `face_recognition` | Face detection, encoding, and matching |
-| OpenCV | Image processing and drawing recognition labels |
-| NumPy | Image arrays and numerical operations |
-| Pillow | Image loading and conversion |
-| Firebase Admin SDK | Backend integration |
-| Cloud Firestore | Face encodings and profile metadata |
-| Firebase Cloud Storage | Profile image storage |
-| Pandas | Tabular display of registered profiles |
+Face Recogniser combines computer vision, facial feature encoding, and cloud-based data management in one interactive application.
 
----
+Instead of simply detecting a face, the system compares facial encodings against registered individuals and retrieves their associated information. Its sports-oriented profiles can include statistics for **Cricket, NBA, and Football**.
 
-## 🏗️ How It Works
+Whether an administrator is managing registered profiles or a user is identifying someone from a photograph, the application provides a simple interface for the entire workflow.
 
-The application follows a face registration and recognition workflow.
+> 💡 **The idea:** Turn facial recognition into a profile discovery experience by connecting computer vision with structured cloud data.
+
+## 🔥 Key Features
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### 🎯 Intelligent Recognition
+- Facial detection and encoding
+- Matching against registered identities
+- Multiple-face image processing
+- Face labels and bounding boxes
+- Handling for unknown or possible matches
+
+</td>
+<td width="50%" valign="top">
+
+### ☁️ Cloud-Powered Backend
+- Firebase Firestore integration
+- Firebase Storage for profile images
+- Cached face data for repeated use
+- Persistent profile metadata
+- Cloud-backed registration workflow
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 🛡️ Admin Control Center
+- Register new individuals
+- Generate face encodings
+- Update profile details
+- Replace images and encodings
+- Delete profiles and filter records
+
+</td>
+<td width="50%" valign="top">
+
+### 🏆 Sports Intelligence
+- Cricket player profiles
+- NBA player profiles
+- Football player profiles
+- Personal and physical details
+- Sport-specific statistics
+
+</td>
+</tr>
+</table>
+
+## 🧠 How It Works
 
 ```mermaid
 flowchart TD
-    A[User or Admin Login] --> B{Select Role}
-    B -->|Admin| C[Register or Manage Profiles]
-    C --> D[Upload Face Image]
-    D --> E[Detect Face and Generate Encoding]
-    E --> F[Save Encoding in Firestore]
-    E --> G[Save Image in Firebase Storage]
-    B -->|User| H[Upload Image or Capture Photo]
-    H --> I[Detect Faces and Generate Encodings]
-    F --> J[Load Registered Face Encodings]
-    J --> K[Compare Face Encodings]
-    I --> K
-    K --> L{Match Found?}
-    L -->|Yes| M[Display Identity and Profile Details]
-    L -->|No| N[Display Unknown or Possible Match]
+    A["📸 Upload Image / Capture Photo"] --> B["Face Detection"]
+    B --> C["Generate Facial Encoding"]
+    C --> D["Compare with Registered Encodings"]
+    E["Firebase Firestore"] --> D
+    D --> F{"Identity Match?"}
+    F -->|Match| G["Retrieve Profile"]
+    F -->|No Match| H["Unknown / Possible Match"]
+    G --> I["Display Name & Sports Statistics"]
+    H --> J["Display Recognition Result"]
+    I --> K["Interactive Streamlit UI"]
+    J --> K
 ```
 
-### Recognition Pipeline
+### The Recognition Pipeline
 
-1. An administrator registers a person with a name, sport, and image.
-2. The application detects faces and generates numerical face encodings.
-3. The encoding and associated metadata are stored in Firestore, while the image is uploaded to Firebase Storage.
-4. Registered encodings are loaded and cached for subsequent recognition requests.
-5. A user uploads an image or captures a photo.
-6. The application compares detected face encodings with registered encodings.
-7. Matching identities are labelled on the processed image, and available profile information is shown in the sidebar.
+1. **Capture:** The user uploads an image or takes a picture using the camera interface.
+2. **Detect:** The application locates faces in the image.
+3. **Encode:** The `face_recognition` library converts detected faces into numerical feature representations.
+4. **Compare:** The encodings are compared with those of registered individuals.
+5. **Retrieve:** When a match is found, the corresponding profile is retrieved from the database.
+6. **Display:** The interface shows the identification result and available profile information.
 
-**Important:** This is a face identification system, not an object detector or a speech-recognition application.
+## 🛠️ Tech Stack
 
----
+<div align="center">
 
-## 📁 Project Structure
+| Technology | Role in the Project |
+|:---|:---|
+| 🐍 **Python** | Core application logic |
+| 👁️ **face_recognition** | Face detection, encoding and matching |
+| 📷 **OpenCV** | Image processing and recognition annotations |
+| 🎨 **Streamlit** | Interactive web application |
+| 🔢 **NumPy** | Numerical processing of image and encoding data |
+| 🖼️ **Pillow** | Image loading and conversion |
+| 🔥 **Firebase Admin SDK** | Secure backend integration |
+| ☁️ **Cloud Firestore** | Face encodings and profile metadata |
+| 🗄️ **Firebase Cloud Storage** | Registered profile images |
+| 🐼 **Pandas** | Tabular profile management |
+
+</div>
+
+## 🏗️ Application Architecture
+
+```text
+                   ┌─────────────────────┐
+                   │    Streamlit UI     │
+                   └──────────┬──────────┘
+                              │
+                ┌─────────────┴─────────────┐
+                │                           │
+        ┌───────▼────────┐         ┌────────▼────────┐
+        │   Admin Panel  │         │   User Panel    │
+        │ Register/Manage│         │ Upload / Camera │
+        └───────┬────────┘         └────────┬────────┘
+                │                           │
+                ▼                           ▼
+        ┌─────────────────┐        ┌─────────────────┐
+        │ Face Encoding   │        │ Face Matching   │
+        └────────┬────────┘        └────────┬────────┘
+                 │                          │
+                 └────────────┬─────────────┘
+                              ▼
+                    ┌──────────────────┐
+                    │ Firebase Backend │
+                    ├──────────────────┤
+                    │ Cloud Firestore  │
+                    │ Cloud Storage    │
+                    └────────┬─────────┘
+                             ▼
+                    ┌──────────────────┐
+                    │ Profile & Result │
+                    └──────────────────┘
+```
+
+## 🏅 Supported Sports Profiles
+
+The application can associate recognised identities with sport-specific information.
+
+| Category | Example statistics |
+|:---|:---|
+| 🏏 Cricket | Total runs, total wickets |
+| 🏀 NBA | Points per game, playing position |
+| ⚽ Football | Goals scored, goals saved |
+| 👤 General | Name, age, height and other available metadata |
+
+*The displayed statistics depend on the information stored for each profile.*
+
+## 📂 Project Structure
 
 ```text
 face-recogniser/
 │
-├── app.py                 # Main Streamlit application
-├── requirements.txt       # Python dependencies
-├── sso_logo.jpg           # Application logo expected by the UI
-└── .streamlit/
-    └── secrets.toml       # Local Firebase and login configuration
+├── app.py                  # Main Streamlit application
+├── requirements.txt        # Project dependencies
+├── sso_logo.jpg            # Application logo (verify filename)
+├── .streamlit/
+│   └── secrets.toml        # Local configuration — do not commit
+└── README.md               # Project documentation
 ```
 
-The `.streamlit/secrets.toml` file is a local configuration file that you create; it should not be committed with real credentials.
+## 🚀 Getting Started
 
----
-
-## 🚀 Installation and Setup
+Get the project running locally in a few steps.
 
 ### 1. Clone the repository
 
@@ -135,210 +202,136 @@ cd face-recogniser
 python -m venv venv
 ```
 
-Activate it on Windows:
+Activate it:
 
+**Windows PowerShell**
 ```powershell
 .\venv\Scripts\Activate.ps1
 ```
 
-Or on macOS/Linux:
-
+**macOS / Linux**
 ```bash
 source venv/bin/activate
 ```
 
 ### 3. Install dependencies
 
-Upgrade pip and install the packages specified by the repository:
-
 ```bash
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**Installation note:** The `face_recognition` package depends on `dlib`, which can require additional build tools or compatible prebuilt packages. If installation fails, check the Python version, operating system, and the installation instructions for `dlib` and `face_recognition`.
+> ⚙️ **Installation tip:** `face_recognition` depends on `dlib`, which may require additional system libraries or build tools. If installation fails, consult the installation instructions for both packages for your operating system and Python version.
 
 ### 4. Configure Firebase
 
-In the Firebase Console:
+Before running the app:
 
-1. Create or select a Firebase project.
-2. Enable **Cloud Firestore**.
-3. Set up **Cloud Storage**.
-4. Create a service account with appropriate permissions.
-5. Download its service-account JSON file securely.
-6. Note the Firebase Storage bucket name and decide on a Firestore collection name.
+- Create a Firebase project.
+- Enable Cloud Firestore and Firebase Storage.
+- Create a service account with the required permissions.
+- Obtain the service-account JSON and Storage bucket name.
+- Configure your Streamlit secrets using the keys expected by `app.py`.
 
-The application reads the Firebase service-account JSON, Storage bucket, and collection name from Streamlit secrets.
-
-### 5. Configure Streamlit secrets
-
-Create the following file in the project directory:
-
-`.streamlit/secrets.toml`
-
-Add the configuration below, replacing all placeholders with your own values.
+Create `.streamlit/secrets.toml` and enter your actual configuration. Keep this file private.
 
 ```toml
 [firebase]
 service_account_json = '''
-{
-  "type": "service_account",
-  "project_id": "YOUR_PROJECT_ID",
-  "private_key_id": "YOUR_PRIVATE_KEY_ID",
-  "private_key": "YOUR_PRIVATE_KEY",
-  "client_email": "YOUR_SERVICE_ACCOUNT_EMAIL",
-  "client_id": "YOUR_CLIENT_ID",
-  "token_uri": "https://oauth2.googleapis.com/token"
-}
+PASTE_YOUR_COMPLETE_SERVICE_ACCOUNT_JSON_HERE
 '''
 storage_bucket = "YOUR_FIREBASE_STORAGE_BUCKET"
 firestore_collection = "YOUR_FIRESTORE_COLLECTION"
 
 [admin]
 username = "your_admin_username"
-password = "replace_with_a_strong_admin_password"
+password = "your_admin_password"
 
 [users]
 user1_username = "your_first_username"
-user1_password = "replace_with_a_strong_password"
-
+user1_password = "your_first_password"
 user2_username = "your_second_username"
-user2_password = "replace_with_another_strong_password"
+user2_password = "your_second_password"
 ```
 
-**Configuration requirements:**
-- Use the complete service-account JSON provided by Firebase, not the abbreviated example above.
-- Keep the private key and passwords secret.
-- The application expects the administrator credentials under `[admin]` and user credentials under `[users]`.
-- Give the service account only the permissions needed for Firestore and Storage.
-- Configure Firestore and Storage security rules appropriately.
+Ensure the service-account value contains the complete JSON object in the format expected by the application. The collection and credential key names must match the implementation in `app.py`.
 
-### 6. Run the application
+### 5. Launch the application
 
 ```bash
 streamlit run app.py
 ```
 
-Open the local URL shown in the terminal, usually:
+Open the local address printed in the terminal, typically:
 
-```text
-http://localhost:8501
-```
+**http://localhost:8501**
 
-Choose either **Login as User** or **Login as Admin** from the home screen.
+Log in using the credentials configured for your application.
 
----
+## 🖥️ Application Modules
 
-## 🗄️ Database Design
+### 👨‍💼 Admin Panel
+Manage the recognition database by registering new faces, maintaining profile information, replacing images, and removing records.
 
-### Firestore
+### 👤 User Panel
+Identify registered individuals from an uploaded image or camera capture and view the profile information available for the detected person.
 
-The application reads and writes profile documents in the collection specified by `firestore_collection`.
+### 🗃️ Firebase Data Layer
+Store and retrieve facial encodings, metadata, and profile images through Firebase services.
 
-A typical document contains fields similar to the following:
+## 🔐 Security & Responsible Use
 
-```json
-{
-  "name": "Example Athlete",
-  "encoding": ["face-encoding-values"],
-  "age": 28,
-  "height": "180 cm",
-  "sport": "Cricket",
-  "total_runs": 5000,
-  "total_wickets": 120,
-  "image_storage_path": "known_faces_images/example_1234.jpg",
-  "timestamp": "Firestore server timestamp"
-}
-```
+Facial data is sensitive biometric information. A responsible deployment should:
 
-This is an illustrative schema. Sport-specific fields are optional and depend on the registered person's category.
+- Never commit Firebase credentials or passwords.
+- Restrict database and storage access using appropriate permissions and security rules.
+- Use strong credentials and improve authentication before public deployment.
+- Obtain appropriate consent before collecting or processing facial images.
+- Avoid exposing personal information and face encodings to unauthorised users.
+- Treat recognition as a possible match, not definitive proof of identity.
 
-The `encoding` field stores the numerical face representation generated by the recognition library. It is not the original image.
+**Note:** The project's secrets-based login is a basic access mechanism, not a replacement for production-grade authentication and authorisation.
 
-### Firebase Storage
+## ⚠️ Current Limitations
 
-Registered profile images are stored under:
+- Recognition works against registered identities; it does not identify every person on the internet.
+- Results can vary with lighting, image quality, facial pose, and occlusion.
+- Camera recognition processes captured images rather than providing continuous live-video tracking.
+- Profile completeness depends on the data entered by the administrator.
+- A face match does not establish real-world identity with certainty.
 
-```text
-known_faces_images/
-```
+## 🔮 Future Enhancements
 
-Each stored image has a unique filename, and its storage path is recorded in the corresponding Firestore document.
-
----
-
-## 🧪 Recognition and Matching
-
-The application uses face encodings to compare an input face with registered faces.
-
-- `face_recognition.face_locations()` detects faces.
-- `face_recognition.face_encodings()` generates face representations.
-- `face_recognition.compare_faces()` checks matches using the library's tolerance setting.
-- `face_recognition.face_distance()` measures the distance between encodings.
-
-The implementation also handles a close-but-not-confirmed match separately, displaying `Possibly [name]` when the best face distance is below its additional threshold of `0.6`.
-
-Recognition results depend on image quality, lighting, facial pose, and the quality of the registered reference images. The threshold is not a guarantee of identity.
-
----
-
-## 🔐 Security and Privacy
-
-This project handles biometric data and personal information, so deployment requires care.
-
-- Never commit `.streamlit/secrets.toml` or service-account credentials.
-- Add local secrets and virtual-environment directories to `.gitignore`.
-- Use strong passwords and restrict access to administrator functions.
-- Configure Firebase IAM permissions and database/storage rules.
-- Collect and process facial images only with appropriate consent and a lawful purpose.
-- Avoid exposing face encodings, personal metadata, or uploaded images publicly.
-- Consider stronger authentication and server-side access controls before using the application in production.
-
-The application's username/password checks use Streamlit secrets. They should not be treated as a complete production-grade authentication system.
-
----
-
-## ⚠️ Limitations
-
-- Recognition is limited to identities registered in the database.
-- Accuracy can decrease with poor lighting, occlusion, extreme angles, or low-resolution images.
-- The camera workflow captures an image for processing; it is not a continuous real-time video stream.
-- The registration workflow uses the first face encoding found in an uploaded image. Use a clear image containing one intended person when registering a profile.
-- Profile details depend on the metadata entered by the administrator.
-- Firebase connectivity and correctly configured credentials are required.
-- The application does not establish a person's real-world identity with certainty.
-
----
-
-## 🔮 Future Improvements
-
-- Add continuous webcam recognition with live video processing.
-- Introduce stronger authentication, role-based authorization, and audit logs.
-- Add batch registration and duplicate-profile detection.
-- Improve unknown-person handling and tune matching thresholds using validation data.
-- Add profile search, pagination, and exportable reports.
-- Add automated tests and structured application logging.
-- Improve deployment configuration and secrets management.
-
----
+- [ ] Real-time webcam recognition
+- [ ] More robust authentication and role-based access
+- [ ] Duplicate-face detection during registration
+- [ ] Improved unknown-person rejection and threshold validation
+- [ ] Profile search, filters and exportable reports
+- [ ] Automated tests and structured error logging
+- [ ] Improved deployment configuration and monitoring
 
 ## 👨‍💻 Author
 
-**Yuvansh Kalra**
+<div align="center">
 
-GitHub: [@yuvanshkalra](https://github.com/yuvanshkalra)
+### **Yuvansh Kalra**
 
-Project: [Face Recogniser](https://github.com/yuvanshkalra/face-recogniser)
+[![GitHub](https://img.shields.io/badge/GitHub-yuvanshkalra-181717?style=for-the-badge&logo=github)](https://github.com/yuvanshkalra)
 
----
+*Building with AI, computer vision, and Python.*
+
+</div>
 
 ## 📄 License
 
-No license has been specified here. Check the repository for an existing license before reusing or distributing the project.
+No license is documented in this README. Check the repository for an existing license before redistributing or reusing the project.
 
 ---
 
-<p align="center">
-  Built with Python, Streamlit, OpenCV, and Firebase.
-</p>
+<div align="center">
+
+**⭐ If you find this project interesting, consider starring the repository!**
+
+*Built with Python · Streamlit · Computer Vision · Firebase*
+
+</div>

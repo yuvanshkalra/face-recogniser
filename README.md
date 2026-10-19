@@ -13,7 +13,6 @@ A Python-based face recognition web application that identifies registered indiv
 ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
 ![Machine Learning](https://img.shields.io/badge/AI-Face_Recognition-8A2BE2?style=for-the-badge)
 
-[🚀 View Repository](https://github.com/yuvanshkalra/face-recogniser) · [🐛 Report an Issue](https://github.com/yuvanshkalra/face-recogniser/issues)
 
 </div>
 

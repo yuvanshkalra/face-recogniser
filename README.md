@@ -1,4 +1,4 @@
-#Face Recogniser
+# Face Recogniser
 ### AI-Powered Face Recognition & Sports Profile Intelligence
 
 **Recognise faces. Discover profiles. Connect identities with data.**
